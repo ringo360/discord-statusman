@@ -13,6 +13,10 @@ const config = require('./config.json');
  */
 let N_Status = 0;
 
+let Statusmsg;
+
+let confirmed;
+
 let Status = 'online';
 
 async function discord() {
@@ -27,48 +31,92 @@ async function discord() {
 	});
 }
 
-async function incrN() {
-	N_Status++;
-	if (N_Status > 3) N_Status = 0;
-}
-
-async function decrN() {
+async function down() {
 	N_Status--;
 	if (0 > N_Status) N_Status = 3;
 }
 
+async function up() {
+	N_Status++;
+	if (N_Status > 3) N_Status = 0;
+}
+
 async function detectkey(key) {
+	if (key == 'return') {
+		confirmed = true;
+		updateStatus();
+	}
 	if (key == 'up') {
-		await incrN();
-		console.log(N_Status);
+		confirmed = false;
+		await down();
 		updateStatus();
 	}
 	if (key == 'down') {
-		await decrN();
-		console.log(N_Status);
+		confirmed = false;
+		await up();
 		updateStatus();
 	}
+	display();
 }
 
 /**
  * ステータスを設定します。
  * @param mode 'online', 'idle', 'dnd', 'invisible (オフラインなんてありません)
  */
-async function updateStatus() {
-	if (N_Status === 0) Status = 'online';
-	if (N_Status === 1) Status = 'idle';
-	if (N_Status === 2) Status = 'dnd';
-	if (N_Status === 3) Status = 'invisible';
-	console.log(Status);
 
-	await client.user.setStatus(Status);
-	console.log('OK');
+async function updateStatus() {
+	let online = color.gray('Online');
+	let idle = color.gray('Idle');
+	let dnd = color.gray('dnd');
+	let invis = color.gray('Invisible');
+
+	// Status set uwu
+	if (N_Status === 0 && confirmed === true) {
+		Status = 'online';
+		// await client.user.setStatus(Status);
+	}
+	if (N_Status === 1 && confirmed === true) {
+		Status = 'idle';
+		// await client.user.setStatus(Status);
+	}
+	if (N_Status === 2 && confirmed === true) {
+		Status = 'dnd';
+		// await client.user.setStatus(Status);
+	}
+	if (N_Status === 3 && confirmed === true) {
+		Status = 'invisible';
+		// await client.user.setStatus(Status);
+	}
+
+	// Render
+	if (N_Status === 0) online = color.white('online');
+	if (N_Status === 1) idle = color.white('idle');
+	if (N_Status === 2) dnd = color.white('dnd');
+	if (N_Status === 3) invis = color.white('invisible');
+
+	// Render(confirmed)
+	if (N_Status === 0 && confirmed === true) online = color.green('online');
+	if (N_Status === 1 && confirmed === true) idle = color.green('idle');
+	if (N_Status === 2 && confirmed === true) dnd = color.green('dnd');
+	if (N_Status === 3 && confirmed === true) invis = color.green('invisible');
+
+	Statusmsg = `
+	Status: ${color.cyan(Status)}
+	${online}
+	${idle}
+	${dnd}
+	${invis}
+	`;
 }
 
 async function display() {
-	process.stdout.write(`
+	process.stdout.write(
+		'\x1bc' +
+			`
 	${color.cyan('Discord Status Manager')}\n
-	${color.gray('(Ctrl+C to exit)')}\n`);
+	${Statusmsg}\n
+	${color.gray('(Ctrl+C to exit)')}\n`
+	);
 }
 
 async function listener() {
@@ -83,7 +131,8 @@ async function listener() {
 }
 
 async function main() {
-	await discord();
+	// await discord();
+	await updateStatus();
 	await listener();
 	display();
 }
