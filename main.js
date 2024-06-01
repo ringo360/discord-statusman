@@ -22,7 +22,6 @@ let Status = 'online';
 async function discord() {
 	return new Promise((resolve, reject) => {
 		client.once('ready', () => {
-			// console.log(`Logged in as ${client.user.username}`);
 			console.log(`Logged in as ${color.green(client.user.username)}`);
 			resolve();
 		});
@@ -61,9 +60,8 @@ async function detectkey(key) {
 
 /**
  * ステータスを設定します。
- * @param mode 'online', 'idle', 'dnd', 'invisible (オフラインなんてありません)
+ * @param mode 'online', 'idle', 'dnd', 'invisible'
  */
-
 async function updateStatus() {
 	let online = color.gray('Online');
 	let idle = color.gray('Idle');
@@ -73,19 +71,19 @@ async function updateStatus() {
 	// Status set uwu
 	if (N_Status === 0 && confirmed === true) {
 		Status = 'online';
-		// await client.user.setStatus(Status);
+		await client.user.setStatus(Status);
 	}
 	if (N_Status === 1 && confirmed === true) {
 		Status = 'idle';
-		// await client.user.setStatus(Status);
+		await client.user.setStatus(Status);
 	}
 	if (N_Status === 2 && confirmed === true) {
 		Status = 'dnd';
-		// await client.user.setStatus(Status);
+		await client.user.setStatus(Status);
 	}
 	if (N_Status === 3 && confirmed === true) {
 		Status = 'invisible';
-		// await client.user.setStatus(Status);
+		await client.user.setStatus(Status);
 	}
 
 	// Render
@@ -94,14 +92,10 @@ async function updateStatus() {
 	if (N_Status === 2) dnd = color.white('dnd');
 	if (N_Status === 3) invis = color.white('invisible');
 
-	// Render(confirmed)
-	if (N_Status === 0 && confirmed === true) online = color.green('online');
-	if (N_Status === 1 && confirmed === true) idle = color.green('idle');
-	if (N_Status === 2 && confirmed === true) dnd = color.green('dnd');
-	if (N_Status === 3 && confirmed === true) invis = color.green('invisible');
-
 	Statusmsg = `
-	Status: ${color.cyan(Status)}
+	Status: ${color.green(Status)}
+
+	${color.gray('(Select with ↑/↓)')}
 	${online}
 	${idle}
 	${dnd}
@@ -109,37 +103,57 @@ async function updateStatus() {
 	`;
 }
 
+/**
+ * ターミナルへの描画を行います。
+ */
 async function display() {
 	process.stdout.write(
 		'\x1bc' +
 			`
-	${color.cyan('Discord Status Manager')}\n
-	${Statusmsg}\n
-	${color.gray('(Ctrl+C to exit)')}\n`
+	${color.cyan('Discord Status Manager')}${Statusmsg}
+	${color.gray(`(${color.cyan('Ctrl+C')} to exit)`)}\n`
 	);
 }
 
+/**
+ * キー入力をlistenします。
+ */
 async function listener() {
 	keypress(process.stdin);
 	process.stdin.on('keypress', function (ch, key) {
 		detectkey(key.name);
 		// console.log(key.name);
-		if (key && key.ctrl && key.name == 'c') process.exit(0);
+		if (key && key.ctrl && key.name == 'c') shutdown();
 	});
 	process.stdin.setRawMode(true);
 	process.stdin.resume();
 }
+/**
+ * 終了処理を行います。
+ */
+async function shutdown() {
+	process.stdout.write('\x1bc');
+	console.log(`${color.gray('Shutting down...')}`);
+	try {
+		await client.destroy();
+		console.log(`[Discord] ${color.green('Disconnected!')}`);
+	} catch (e) {
+		console.error(
+			`${color.red('Something went wrong...')} ${color.reset(e)}`
+		);
+		process.exit(1);
+	}
+	console.log(`${color.cyan('Goodbye!')}`);
+	process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
 
 async function main() {
-	// await discord();
+	await discord();
 	await updateStatus();
 	await listener();
 	display();
 }
-/*
-setInterval(() => {
-    process.stdout.write("\x1bc" + `IP: ${args.target} Port: ${args.port}\n${"=".repeat(30)}\nSend: ${sendCount} Recv: ${recvCount}\n${"=".repeat(30)}\n(Ctrl+C to exit)\n`);
-}, 1000);
-*/
-
 main();
