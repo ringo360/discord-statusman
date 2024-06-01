@@ -95,7 +95,7 @@ async function updateStatus() {
 	Statusmsg = `
 	Status: ${color.green(Status)}
 
-	${color.gray('(Select with ↑/↓)')}
+	${color.gray('(Select with ↑/↓, Enter to update status.)')}
 	${online}
 	${idle}
 	${dnd}
